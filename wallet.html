@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wallet - Tebak-Tebak Cuan</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#f5f5f5;
+}
+
+header{
+    background:#00a86b;
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+
+.container{
+    width:90%;
+    max-width:500px;
+    margin:20px auto;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.2);
+    margin-bottom:15px;
+}
+
+.saldo{
+    font-size:30px;
+    color:#00a86b;
+    font-weight:bold;
+    text-align:center;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    background:#00a86b;
+    color:white;
+    border:none;
+    border-radius:5px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#008f5a;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:8px;
+    text-align:center;
+}
+
+th{
+    background:#00a86b;
+    color:white;
+}
+</style>
+
+</head>
+<body>
+
+<header>
+<h1>💼 Wallet Saya</h1>
+</header>
+
+<div class="container">
+
+<div class="card">
+  <p style="font-size: 13px; color: #555;">Tiap Penarikan, akan dikenakan Potongan Pajak 10%</p>
+  <h2>Saldo / Poin</h2>
+
+  <div class="saldo" id="text-saldo">
+  Rp 0
+  </div>
+
+  <button onclick="window.location.href='isi-saldo.html'">Isi Saldo</button>
+  <button onclick="window.location.href='tarik-saldo.html'">Tarik Dana</button>
+</div>
+
+<div class="card">
+  <h2>Riwayat Transaksi</h2>
+  <table>
+      <thead>
+          <tr>
+              <th>Jenis</th>
+              <th>Jumlah</th>
+              <th>Status</th>
+          </tr>
+      </thead>
+      <tbody id="tabel-riwayat">
+          <tr>
+              <td colspan="3" style="text-align: center; color: #666;">Memuat riwayat...</td>
+          </tr>
+      </tbody>
+  </table>
+</div>
+
+<button onclick="location.href='dashboard.html'" style="background: #6b7280;">
+⬅ Kembali ke Dashboard
+</button>
+
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCqE8yJBHcCiWbgOo53RR-TlZW-Ia8XTvc",
+      authDomain: "tebak-tebak-cuan-ef0d7.firebaseapp.com",
+      projectId: "tebak-tebak-cuan-ef0d7",
+      storageBucket: "tebak-tebak-cuan-ef0d7.firebasestorage.app",
+      messagingSenderId: "399613865817",
+      appId: "1:399613865817:web:0eae23e826d8544741e648",
+      measurementId: "G-E9227HR8G8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const currentMemberId = "Fxe38fcXx8XGOxYCVxLjhqnf6dB3";
+
+    async function muatWallet() {
+        const tabelRiwayat = document.getElementById('tabel-riwayat');
+
+        try {
+            const memberRef = doc(db, "member", currentMemberId);
+            const memberSnap = await getDoc(memberRef);
+
+            if (memberSnap.exists()) {
+                const d = memberSnap.data();
+                console.log("Data member dari Firebase:", d); // Untuk dicek di konsol
+
+                // Mencakup berbagai kemungkinan nama field di database (poin, Poin, saldo, Saldo, dll)
+                const totalSaldo = Number(d.poin ?? d.Poin ?? d.saldo ?? d.Saldo ?? d.POINT ?? d.SALDO ?? 0);
+                document.getElementById('text-saldo').innerText = `Rp ${totalSaldo.toLocaleString()}`;
+            } else {
+                document.getElementById('text-saldo').innerText = "Rp 0";
+            }
+
+            // Ambil Riwayat Transaksi
+            tabelRiwayat.innerHTML = "";
+            let semuaTransaksi = [];
+
+            try {
+                const qDeposit = query(collection(db, "deposit"), where("uid", "==", currentMemberId));
+                const snapshotDeposit = await getDocs(qDeposit);
+                snapshotDeposit.forEach((docSnap) => {
+                    const d = docSnap.data();
+                    semuaTransaksi.push({
+                        jenis: 'Top-Up / Deposit',
+                        jumlah: Number(d.jumlah || d.Jumlah || d.nominal || 0),
+                        status: d.status || 'Pending'
+                    });
+                });
+            } catch (e) {
+                console.log("Error deposit:", e);
+            }
+
+            try {
+                const qPenarikan = query(collection(db, "penarikan"), where("uid", "==", currentMemberId));
+                const snapshotPenarikan = await getDocs(qPenarikan);
+                snapshotPenarikan.forEach((docSnap) => {
+                    const d = docSnap.data();
+                    semuaTransaksi.push({
+                        jenis: 'Penarikan / Withdraw',
+                        jumlah: Number(d.jumlah || d.Jumlah || d.nominal || 0),
+                        status: d.status || 'Pending'
+                    });
+                });
+            } catch (e) {
+                console.log("Error penarikan:", e);
+            }
+
+            if (semuaTransaksi.length === 0) {
+                tabelRiwayat.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #666;">Belum ada riwayat transaksi.</td></tr>`;
+                return;
+            }
+
+            tabelRiwayat.innerHTML = "";
+            semuaTransaksi.forEach((trx) => {
+                let warnaStatus = 'orange';
+                if (trx.status === 'Berhasil') warnaStatus = 'green';
+                if (trx.status === 'Ditolak') warnaStatus = 'red';
+
+                const row = `
+                    <tr>
+                        <td>${trx.jenis}</td>
+                        <td>Rp ${trx.jumlah.toLocaleString()}</td>
+                        <td><span style="color: ${warnaStatus}; font-weight: bold;">${trx.status}</span></td>
+                    </tr>
+                `;
+                tabelRiwayat.innerHTML += row;
+            });
+
+        } catch (error) {
+            console.error("Gagal memuat:", error);
+            tabelRiwayat.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red;">Gagal memuat data transaksi.</td></tr>`;
+        }
+    }
+
+    window.onload = muatWallet;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verifikasi Deposit - Admin Tebak-Tebak Cuan</title>
+
+<style>
+body{
+font-family:Arial;
+background:#f5f5f5;
+margin:0;
+}
+
+header{
+background:#2563eb;
+color:white;
+padding:20px;
+text-align:center;
+font-size:24px;
+}
+
+.container{
+padding:20px;
+max-width: 1100px;
+margin: auto;
+}
+
+.card {
+background: white;
+padding: 20px;
+border-radius: 10px;
+box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+margin-bottom: 20px;
+overflow-x: auto;
+}
+
+.search-box {
+width: 100%;
+padding: 12px;
+margin-bottom: 15px;
+border: 1px solid #ccc;
+border-radius: 6px;
+box-sizing: border-box;
+font-size: 14px;
+}
+
+table {
+width: 100%;
+border-collapse: collapse;
+margin-top: 10px;
+white-space: nowrap;
+}
+
+th, td {
+padding: 12px;
+text-align: left;
+border-bottom: 1px solid #ddd;
+font-size: 14px;
+}
+
+th {
+background-color: #f8f9fa;
+color: #333;
+}
+
+button{
+padding: 6px 12px;
+font-size: 13px;
+border:none;
+border-radius: 6px;
+cursor: pointer;
+color: white;
+}
+
+.btn-terima {
+background: #10b981; 
+margin-right: 5px;
+}
+
+.btn-tolak {
+background: #ef4444; 
+}
+
+button:hover {
+opacity: 0.9;
+}
+
+.btn-kembali {
+background: #6b7280;
+margin-bottom: 15px;
+width: auto;
+padding: 10px 15px;
+font-size: 14px;
+border-radius: 8px;
+color: white;
+border: none;
+cursor: pointer;
+}
+</style>
+
+</head>
+<body>
+
+<header>
+Verifikasi Deposit Member
+</header>
+
+<div class="container">
+
+<button class="btn-kembali" onclick="location.href='Admin-dashboard.html'">← Kembali ke Dashboard</button>
+
+<div class="card">
+    <h3>Daftar Seluruh Permintaan Top-Up / Deposit</h3>
+    
+    <!-- Kotak Pencarian -->
+    <input type="text" id="inputPencarian" class="search-box" placeholder="🔍 Cari nama, ID, nama rekening, no rekening, atau jumlah uang..." onkeyup="filterTabel()">
+
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Nama & ID Member</th>
+                <th>Jumlah Deposit</th>
+                <th>Metode & Rekening</th>
+                <th>Nama Rekening</th>
+                <th>Tanggal & Waktu</th>
+                <th>Status</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="tabel-deposit">
+            <tr>
+                <td colspan="8" style="text-align: center; color: #666;">Memuat data deposit...</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCqE8yJBHcCiWbgOo53RR-TlZW-Ia8XTvc",
+      authDomain: "tebak-tebak-cuan-ef0d7.firebaseapp.com",
+      projectId: "tebak-tebak-cuan-ef0d7",
+      storageBucket: "tebak-tebak-cuan-ef0d7.firebasestorage.app",
+      messagingSenderId: "399613865817",
+      appId: "1:399613865817:web:0eae23e826d8544741e648",
+      measurementId: "G-E9227HR8G8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let semuaDataDeposit = [];
+
+    async function muatDataDeposit() {
+        const tabelBody = document.getElementById('tabel-deposit');
+        
+        try {
+            const querySnapshot = await getDocs(collection(db, "deposit"));
+            tabelBody.innerHTML = "";
+            
+            if (querySnapshot.empty) {
+                tabelBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #666;">Tidak ada data deposit saat ini.</td></tr>`;
+                return;
+            }
+
+            semuaDataDeposit = [];
+
+            for (const docSnap of querySnapshot.docs) {
+                const data = docSnap.data();
+                
+                let waktuMs = 0;
+                if (data.tanggal && data.tanggal.seconds) {
+                    waktuMs = data.tanggal.seconds * 1000;
+                } else if (data.createdAt && data.createdAt.seconds) {
+                    waktuMs = data.createdAt.seconds * 1000;
+                }
+
+                const idTargetMember = data.uid || data.memberId || data.userId || '';
+                let namaMember = data.nama || '';
+                let namaRekMember = data.namaRekening || '';
+
+                if (idTargetMember) {
+                    try {
+                        const memberRef = doc(db, "member", idTargetMember);
+                        const memberSnap = await getDoc(memberRef);
+                        if (memberSnap.exists()) {
+                            const mData = memberSnap.data();
+                            namaMember = mData.username || mData.nama || mData.email || namaMember;
+                            if (!namaRekMember) {
+                                namaRekMember = mData.namaRekening || '';
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Gagal ambil data member:", err);
+                    }
+                }
+
+                semuaDataDeposit.push({
+                    id: docSnap.id,
+                    ...data,
+                    waktuMs: waktuMs,
+                    resolvedNama: namaMember,
+                    resolvedNamaRekening: namaRekMember
+                });
+            }
+
+            semuaDataDeposit.sort((a, b) => b.waktuMs - a.waktuMs);
+            renderTabel(semuaDataDeposit);
+
+        } catch (error) {
+            console.error("Gagal memuat deposit:", error);
+            tabelBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: red;">Gagal memuat data. Periksa Rules Firestore.</td></tr>`;
+        }
+    }
+
+    async function renderTabel(dataArray) {
+        const tabelBody = document.getElementById('tabel-deposit');
+        tabelBody.innerHTML = "";
+
+        if (dataArray.length === 0) {
+            tabelBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #666;">Data tidak ditemukan.</td></tr>`;
+            return;
+        }
+
+        let no = 0;
+        
+        for (const item of dataArray) {
+            no++;
+            const depositId = item.id;
+            const status = item.status || 'Pending';
+            const idTargetMember = item.uid || item.memberId || item.userId || '';
+            const namaMember = item.resolvedNama || 'Tidak diketahui';
+
+            let waktuFormat = '-';
+            if (item.waktuMs > 0) {
+                waktuFormat = new Date(item.waktuMs).toLocaleString('id-ID', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                });
+            }
+
+            const metode = item.metode || 'Transfer Bank';
+            const rekening = item.rekening || item.nomorRekening || item.noRek || '-';
+            const namaRekening = item.resolvedNamaRekening || '-';
+
+            let tombolAksi = `-`;
+            if (status === 'Pending' || status === 'menunggu') {
+                tombolAksi = `
+                    <button class="btn-terima" onclick="prosesDeposit('${depositId}', '${idTargetMember}', ${item.jumlah || item.nominal || 0}, 'terima')">Setujui</button>
+                    <button class="btn-tolak" onclick="prosesDeposit('${depositId}', '${idTargetMember}', 0, 'tolak')">Tolak</button>
+                `;
+            } else {
+                tombolAksi = `<span style="color: gray; font-style: italic;">Sudah diproses</span>`;
+            }
+
+            const row = `
+                <tr>
+                    <td>${no}</td>
+                    <td>
+                        <strong>${namaMember}</strong><br>
+                        <small style="color: #666;">ID: ${idTargetMember || 'Tidak ada'}</small>
+                    </td>
+                    <td>Rp ${Number(item.jumlah || item.nominal || 0).toLocaleString()}</td>
+                    <td>
+                        ${metode}<br>
+                        <small style="color: #444;">No. Rek: <strong>${rekening}</strong></small>
+                    </td>
+                    <td><strong>${namaRekening}</strong></td>
+                    <td><small>${waktuFormat}</small></td>
+                    <td><span style="color: ${status === 'Pending' ? 'orange' : (status === 'Berhasil' ? 'green' : 'red')}; font-weight: bold;">${status}</span></td>
+                    <td>${tombolAksi}</td>
+                </tr>
+            `;
+            tabelBody.innerHTML += row;
+        }
+    }
+
+    window.filterTabel = function() {
+        const keyword = document.getElementById('inputPencarian').value.toLowerCase();
+        
+        const hasilFilter = semuaDataDeposit.filter(item => {
+            const nama = (item.resolvedNama || '').toLowerCase();
+            const uid = (item.uid || item.memberId || item.userId || '').toLowerCase();
+            const rek = (item.rekening || item.nomorRekening || item.noRek || '').toLowerCase();
+            const namaRek = (item.resolvedNamaRekening || '').toLowerCase();
+            const jumlah = String(item.jumlah || item.nominal || 0).toLowerCase();
+            const metode = (item.metode || '').toLowerCase();
+
+            return nama.includes(keyword) || 
+                   uid.includes(keyword) || 
+                   rek.includes(keyword) || 
+                   namaRek.includes(keyword) || 
+                   jumlah.includes(keyword) || 
+                   metode.includes(keyword);
+        });
+
+        renderTabel(hasilFilter);
+    }
+
+    window.prosesDeposit = async function(depositId, memberId, jumlah, aksi) {
+        try {
+            if (aksi === 'terima') {
+                if (!memberId) {
+                    alert("ID Member tidak valid pada data deposit ini.");
+                    return;
+                }
+
+                const memberRef = doc(db, "member", memberId);
+                const memberSnap = await getDoc(memberRef);
+
+                if (!memberSnap.exists()) {
+                    alert("Akun member tujuan tidak ditemukan di database!");
+                    return;
+                }
+
+                const dataMember = memberSnap.data();
+                const saldoLama = Number(dataMember.poin ?? dataMember.saldo ?? 0);
+                const saldoBaru = saldoLama + Number(jumlah);
+
+                await updateDoc(memberRef, {
+                    poin: saldoBaru
+                });
+
+                const depositRef = doc(db, "deposit", depositId);
+                await updateDoc(depositRef, {
+                    status: 'Berhasil'
+                });
+
+                alert(`Deposit berhasil disetujui! Saldo member telah ditambahkan sebesar Rp ${Number(jumlah).toLocaleString()}`);
+            } else {
+                const depositRef = doc(db, "deposit", depositId);
+                await updateDoc(depositRef, {
+                    status: 'Ditolak'
+                });
+                alert("Permintaan deposit telah ditolak.");
+            }
+
+            muatDataDeposit();
+
+        } catch (error) {
+            alert("Terjadi kesalahan saat memproses: " + error.message);
+        }
+    }
+
+    window.onload = muatDataDeposit;
+</script>
+
+</body>
+</html>

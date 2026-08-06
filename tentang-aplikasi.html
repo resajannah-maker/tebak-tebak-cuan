@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tentang Aplikasi - Tebak-Tebak Cuan</title>
+<style>
+body{
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    color: #333;
+}
+header{
+    background: #009966;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    font-size: 20px;
+    position: relative;
+    font-weight: bold;
+}
+.btn-kembali {
+    position: absolute;
+    left: 15px;
+    top: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.btn-kembali:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+.container {
+    max-width: 700px;
+    margin: 20px auto;
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+}
+h2 {
+    color: #009966;
+    margin-top: 0;
+    font-size: 22px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+p {
+    line-height: 1.6;
+    font-size: 15px;
+    color: #4b5563;
+}
+.rules-box {
+    background: #f0fdf4;
+    border-left: 5px solid #009966;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 4px;
+}
+.rules-box ul {
+    margin: 0;
+    padding-left: 20px;
+}
+.rules-box li {
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #1f2937;
+}
+.info-notif {
+    background: #eff6ff;
+    border-left: 5px solid #2563eb;
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #1e40af;
+}
+</style>
+</head>
+<body>
+
+<header>
+    <button class="btn-kembali" onclick="location.href='index.html'">← Kembali</button>
+    📖 Tentang Aplikasi
+</header>
+
+<div class="container">
+    <h2>Tebak-Tebak Cuan</h2>
+    <p><b>Tebak-Tebak Cuan</b> adalah aplikasi kuis prediksi dengan menggunakan sistem pertarungan <b>1vs1</b> antar member.</p>
+    
+    <p>Simulasi dan aturan sistem permainan dalam 1 soal:</p>
+
+    <div class="rules-box">
+        <ul>
+            <li><b>Contoh Situasi:</b> Jika dalam 1 soal terdapat total 11 member yang menjawab.</li>
+            <li><b>Jawaban Benar (5 Orang):</b> Mendapatkan tambahan saldo kemenangan dan uang yang di-depositkan akan dikembalikan kembali.</li>
+            <li><b>Jawaban Salah (5 Orang):</b> Saldo yang di-depositkan pada jawaban tersebut tidak akan kembali.</li>
+            <li><b>Sisa 1 Member (Tanpa Pasangan):</b> Jika ada 1 member yang tidak mempunyai pasangan lawan, maka jawaban member tersebut tidak akan diterima dan saldo deposit akan dikembalikan sepenuhnya kepada member tersebut.</li>
+        </ul>
+    </div>
+
+    <div class="info-notif">
+        ℹ️ <b>Informasi Penting:</b> Untuk mengetahui apakah Anda mendapatkan pasangan lawan atau tidak pada sesi kuis, sistem akan mengirimkan info pemberitahuan langsung ke <b>dashboard</b> Anda.
+    </div>
+</div>
+
+</body>
+</html>

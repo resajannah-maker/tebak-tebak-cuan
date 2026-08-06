@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pengaturan - Admin Tebak-Tebak Cuan</title>
+
+<style>
+body{
+font-family:Arial, sans-serif;
+background:#f5f5f5;
+margin:0;
+}
+
+header{
+background:#2563eb;
+color:white;
+padding:20px;
+text-align:center;
+font-size:24px;
+}
+
+.container{
+padding:20px;
+max-width: 600px;
+margin: auto;
+}
+
+.card {
+background: white;
+padding: 20px;
+border-radius: 10px;
+box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+margin-bottom: 20px;
+}
+
+.form-group {
+margin-bottom: 15px;
+}
+
+label {
+display: block;
+margin-bottom: 5px;
+font-weight: bold;
+color: #333;
+}
+
+input {
+width: 100%;
+padding: 10px;
+border: 1px solid #ccc;
+border-radius: 6px;
+box-sizing: border-box;
+font-size: 14px;
+}
+
+button {
+padding: 10px 15px;
+font-size: 14px;
+border: none;
+border-radius: 6px;
+background: #2563eb;
+color: white;
+cursor: pointer;
+width: 100%;
+}
+
+button:hover {
+opacity: 0.9;
+}
+
+.btn-kembali {
+background: #6b7280;
+margin-bottom: 15px;
+width: auto;
+}
+</style>
+</head>
+<body>
+
+<header>
+Pengaturan Akun Admin
+</header>
+
+<div class="container">
+
+<button class="btn-kembali" onclick="location.href='dashboard.html'">← Kembali ke Dashboard</button>
+
+<!-- Form Ganti Password / Pengaturan Admin -->
+<div class="card">
+    <h3>Ubah Kredensial Admin</h3>
+    <form id="form-pengaturan">
+        <div class="form-group">
+            <label>Email Admin:</label>
+            <input type="email" id="emailAdmin" placeholder="admin@domain.com" required>
+        </div>
+        <div class="form-group">
+            <label>Password Baru:</label>
+            <input type="password" id="passwordBaru" placeholder="Masukkan password baru" required>
+        </div>
+        <button type="submit">Simpan Perubahan</button>
+    </form>
+</div>
+
+</div>
+
+<!-- Skrip Firebase & Logika Pengaturan -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "GANTI_DENGAN_API_KEY_KAMU",
+        authDomain: "GANTI_DENGAN_AUTH_DOMAIN.firebaseapp.com",
+        projectId: "tebak-tebak-cuan",
+        storageBucket: "GANTI_DENGAN_STORAGE_BUCKET.appspot.com",
+        messagingSenderId: "GANTI_SENDER_ID",
+        appId: "GANTI_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const formPengaturan = document.getElementById('form-pengaturan');
+    const inputEmail = document.getElementById('emailAdmin');
+    const inputPassword = document.getElementById('passwordBaru');
+
+    let adminDocId = null;
+
+    // 1. Muat data admin saat halaman dibuka
+    async function muatDataAdmin() {
+        try {
+            const querySnapshot = await getDocs(collection(db, "user"));
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                if (data.role === 'admin') {
+                    adminDocId = docSnap.id;
+                    inputEmail.value = data.email || '';
+                    inputPassword.value = data.password || '';
+                }
+            });
+        } catch (error) {
+            console.error("Gagal memuat pengaturan admin:", error);
+        }
+    }
+
+    // 2. Simpan Perubahan Pengaturan
+    formPengaturan.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (!adminDocId) {
+            alert("Data admin tidak ditemukan di database!");
+            return;
+        }
+
+        const emailBaru = inputEmail.value;
+        const passwordBaru = inputPassword.value;
+
+        try {
+            const adminRef = doc(db, "user", adminDocId);
+            await updateDoc(adminRef, {
+                email: emailBaru,
+                password: passwordBaru
+            });
+
+            alert("Pengaturan akun admin berhasil diperbarui!");
+        } catch (error) {
+            alert("Gagal memperbarui pengaturan: " + error.message);
+        }
+    });
+
+    window.onload = muatDataAdmin;
+</script>
+
+</body>
+</html>

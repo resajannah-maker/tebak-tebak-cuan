@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notifikasi Saya - Tebak-Tebak Cuan</title>
+<style>
+body{ font-family:Arial, sans-serif; background:#f5f5f5; margin:0; padding:20px; }
+.container{ max-width:600px; margin:auto; background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+h2{ text-align:center; color:#009966; }
+.notif-card{ background:#f9fafb; border-left:4px solid #009966; padding:12px 15px; margin-bottom:12px; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.notif-card.unread{ background:#f0fdf4; border-left-color:#ef4444; }
+.notif-content { flex: 1; }
+.notif-text { font-size: 14px; color: #1f2937; }
+.notif-time{ font-size:11px; color:#6b7280; margin-top:5px; }
+.btn-baca { background: #009966; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+.btn-baca:hover { background: #007a52; }
+.btn-baca.sudah { background: #9ca3af; cursor: default; }
+.btn-kembali{ background:#6b7280; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; margin-bottom:15px; }
+.btn-kembali:hover{ background:#4b5563; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <button class="btn-kembali" onclick="location.href='dashboard.html'">← Kembali</button>
+    <h2>🔔 Pemberitahuan Admin</h2>
+    
+    <div id="daftarNotif">
+        <p style="text-align: center; color: #666;">Memuat notifikasi...</p>
+    </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
+import { getFirestore, collection, query, where, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCqE8yJBHcCiWbgOo53RR-TlZW-Ia8XTvc",
+  authDomain: "tebak-tebak-cuan-ef0d7.firebaseapp.com",
+  projectId: "tebak-tebak-cuan-ef0d7",
+  storageBucket: "tebak-tebak-cuan-ef0d7.firebasestorage.app",
+  messagingSenderId: "399613865817",
+  appId: "1:399613865817:web:0eae23e826d8544741e648"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const container = document.getElementById("daftarNotif");
+
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    muatNotifikasiMember(user.uid);
+});
+
+async function muatNotifikasiMember(uid) {
+    try {
+        const q = query(collection(db, "notifikasi_member"), where("uid", "==", uid));
+        const querySnapshot = await getDocs(q);
+
+        container.innerHTML = "";
+
+        if (querySnapshot.empty) {
+            container.innerHTML = `<p style="text-align: center; color: #777;">Belum ada pemberitahuan dari admin.</p>`;
+            return;
+        }
+
+        let listNotif = [];
+        querySnapshot.forEach((docItem) => {
+            listNotif.push({ id: docItem.id, ...docItem.data() });
+        });
+
+        // Urutkan dari yang terbaru
+        listNotif.sort((a, b) => {
+            const t1 = a.tanggal?.toDate ? a.tanggal.toDate() : 0;
+            const t2 = b.tanggal?.toDate ? b.tanggal.toDate() : 0;
+            return t2 - t1;
+        });
+
+        listNotif.forEach((data) => {
+            const div = document.createElement("div");
+            div.className = `notif-card ${data.dibaca ? '' : 'unread'}`;
+            div.id = `card-${data.id}`;
+            
+            let waktuStr = "";
+            if (data.tanggal && data.tanggal.toDate) {
+                waktuStr = data.tanggal.toDate().toLocaleString('id-ID');
+            }
+
+            div.innerHTML = `
+                <div class="notif-content">
+                    <div class="notif-text">${escapeHtml(data.pesan)}</div>
+                    <div class="notif-time">${waktuStr}</div>
+                </div>
+                <button class="btn-baca ${data.dibaca ? 'sudah' : ''}" id="btn-${data.id}" onclick="tandaiDibaca('${data.id}')">
+                    ${data.dibaca ? '✓ Dibaca' : 'Tandai Dibaca'}
+                </button>
+            `;
+            container.appendChild(div);
+        });
+
+    } catch (error) {
+        console.error("Gagal memuat notifikasi:", error);
+        container.innerHTML = `<p style="text-align: center; color: red;">Gagal memuat pemberitahuan.</p>`;
+    }
+}
+
+// Fungsi ketika tombol "Tandai Dibaca" diklik oleh member
+window.tandaiDibaca = async function(idNotif) {
+    try {
+        await updateDoc(doc(db, "notifikasi_member", idNotif), {
+            dibaca: true
+        });
+
+        // Ubah tampilan card dan tombol secara instan tanpa perlu reload
+        const card = document.getElementById(`card-${idNotif}`);
+        const btn = document.getElementById(`btn-${idNotif}`);
+        
+        if (card) card.classList.remove("unread");
+        if (btn) {
+            btn.textContent = "✓ Dibaca";
+            btn.classList.add("sudah");
+            btn.disabled = true;
+        }
+    } catch (error) {
+        alert("Gagal memperbarui status: " + error.message);
+    }
+};
+
+function escapeHtml(text) {
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pengaturan Akun - Tebak-Tebak Cuan</title>
+
+<style>
+body{
+font-family:Arial, sans-serif;
+background:#f5f5f5;
+margin:0;
+}
+
+header{
+background:#00a86b;
+color:white;
+padding:20px;
+text-align:center;
+font-size:24px;
+}
+
+.container{
+padding:20px;
+max-width: 600px;
+margin: auto;
+}
+
+.card {
+background: white;
+padding: 20px;
+border-radius: 10px;
+box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+margin-bottom: 20px;
+}
+
+.form-group {
+margin-bottom: 15px;
+}
+
+label {
+display: block;
+margin-bottom: 5px;
+font-weight: bold;
+color: #333;
+}
+
+input, select {
+width: 100%;
+padding: 10px;
+border: 1px solid #ccc;
+border-radius: 6px;
+box-sizing: border-box;
+font-size: 14px;
+}
+
+button {
+padding: 10px 15px;
+font-size: 14px;
+border: none;
+border-radius: 6px;
+background: #00a86b;
+color: white;
+cursor: pointer;
+width: 100%;
+}
+
+button:hover {
+opacity: 0.9;
+}
+
+.btn-kembali {
+background: #6b7280;
+margin-bottom: 15px;
+width: auto;
+}
+</style>
+</head>
+<body>
+
+<header>
+Pengaturan Akun Member
+</header>
+
+<div class="container">
+
+<button class="btn-kembali" onclick="location.href='dashboard.html'">← Kembali ke Dashboard</button>
+
+<div class="card">
+    <h3>Ubah Informasi & Rekening Penarikan</h3>
+    <form id="form-pengaturan-member">
+        <div class="form-group">
+            <label>Nama Lengkap:</label>
+            <input type="text" id="namaMember" placeholder="Masukkan nama lengkap" required>
+        </div>
+        <div class="form-group">
+            <label>Nomor HP / WhatsApp:</label>
+            <input type="text" id="nomorHp" placeholder="Contoh: 08123456789" required>
+        </div>
+        <div class="form-group">
+            <label>Metode Pembayaran (Bank / E-Wallet):</label>
+            <select id="metodePembayaran" required>
+                <option value="">-- Pilih Metode --</option>
+                <option value="DANA">DANA</option>
+                <option value="OVO">OVO</option>
+                <option value="GOPAY">GOPAY</option>
+                <option value="BCA">BCA</option>
+                <option value="BRI">BRI</option>
+                <option value="Mandiri">Mandiri</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Nama Pemilik Rekening / Akun:</label>
+            <input type="text" id="namaRekening" placeholder="Sesuai buku tabungan / akun e-wallet" required>
+        </div>
+        <div class="form-group">
+            <label>Nomor Rekening / Nomor Tujuan E-Wallet:</label>
+            <input type="text" id="nomorRekening" placeholder="Masukkan nomor rekening / HP" required>
+        </div>
+        <button type="submit">Simpan Perubahan</button>
+    </form>
+</div>
+
+</div>
+
+<!-- Skrip Firebase & Logika Pengaturan Member -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "GANTI_DENGAN_API_KEY_KAMU",
+        authDomain: "GANTI_DENGAN_AUTH_DOMAIN.firebaseapp.com",
+        projectId: "tebak-tebak-cuan",
+        storageBucket: "GANTI_DENGAN_STORAGE_BUCKET.appspot.com",
+        messagingSenderId: "GANTI_SENDER_ID",
+        appId: "GANTI_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const formPengaturan = document.getElementById('form-pengaturan-member');
+    const inputNama = document.getElementById('namaMember');
+    const inputHp = document.getElementById('nomorHp');
+    const selectMetode = document.getElementById('metodePembayaran');
+    const inputNamaRek = document.getElementById('namaRekening');
+    const inputNoRek = document.getElementById('nomorRekening');
+
+    // Ambil ID member yang sedang login (disimpan di localStorage saat login)
+    const memberId = localStorage.getItem('memberId');
+
+    async function muatDataMember() {
+        if (!memberId) {
+            alert("Silakan login terlebih dahulu!");
+            location.href = 'login.html';
+            return;
+        }
+
+        try {
+            const docRef = doc(db, "member", memberId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                inputNama.value = data.nama || '';
+                inputHp.value = data.nomorHp || data.hp || '';
+                selectMetode.value = data.metodePembayaran || '';
+                inputNamaRek.value = data.namaRekening || '';
+                inputNoRek.value = data.nomorRekening || '';
+            }
+        } catch (error) {
+            console.error("Gagal memuat profil:", error);
+        }
+    }
+
+    formPengaturan.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (!memberId) {
+            alert("Sesi login berakhir. Silakan login ulang.");
+            return;
+        }
+
+        try {
+            const memberRef = doc(db, "member", memberId);
+            await updateDoc(memberRef, {
+                nama: inputNama.value,
+                nomorHp: inputHp.value,
+                metodePembayaran: selectMetode.value,
+                namaRekening: inputNamaRek.value,
+                nomorRekening: inputNoRek.value
+            });
+
+            alert("Profil dan informasi pembayaran berhasil diperbarui!");
+        } catch (error) {
+            alert("Gagal memperbarui profil: " + error.message);
+        }
+    });
+
+    window.onload = muatDataMember;
+</script>
+
+</body>
+</html>

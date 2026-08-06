@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isi Saldo</title>
+
+<style>
+body{
+    font-family:Arial;
+    background:#f5f5f5;
+    margin: 0;
+    padding: 20px;
+}
+
+.container{
+    width:90%;
+    max-width:400px;
+    margin:40px auto;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+input, select, button{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    box-sizing:border-box;
+    border-radius:5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+button{
+    background:#00a86b;
+    color:white;
+    border:none;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #008f5a;
+}
+
+.btn-kembali {
+    background: #888;
+}
+.btn-kembali:hover {
+    background: #666;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>💳 Isi Saldo</h2>
+
+<p>Masukkan jumlah saldo:</p>
+<input type="number" id="jumlahSaldo" placeholder="Contoh: 5000" required>
+
+<p>Pilih metode pembayaran:</p>
+<select id="metodePembayaran" required>
+<option value="">Pilih Metode</option>
+<option value="Transfer Bank">Transfer Bank</option>
+<option value="E-Wallet">E-Wallet</option>
+<option value="QRIS">QRIS</option>
+</select>
+
+<p>Nomor Rekening / No. HP Pengirim:</p>
+<input type="text" id="nomorRekeningPengirim" placeholder="Contoh: 1234567890 / 08123456789" required>
+
+<button onclick="lanjutPembayaran()">
+Lanjut Pembayaran
+</button>
+
+<button class="btn-kembali" onclick="window.location.href='wallet.html'">
+Kembali
+</button>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCqE8yJBHcCiWbgOo53RR-TlZW-Ia8XTvc",
+  authDomain: "tebak-tebak-cuan-ef0d7.firebaseapp.com",
+  projectId: "tebak-tebak-cuan-ef0d7",
+  storageBucket: "tebak-tebak-cuan-ef0d7.firebasestorage.app",
+  messagingSenderId: "399613865817",
+  appId: "1:399613865817:web:0eae23e826d8544741e648"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let userAktif = null;
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        userAktif = user;
+    } else {
+        window.location.href = "login.html";
+    }
+});
+
+window.lanjutPembayaran = async function() {
+    const jumlah = document.getElementById("jumlahSaldo").value;
+    const metode = document.getElementById("metodePembayaran").value;
+    const rekening = document.getElementById("nomorRekeningPengirim").value;
+
+    if (!jumlah || jumlah <= 0) {
+        alert("Masukkan jumlah saldo dengan benar!");
+        return;
+    }
+
+    if (metode === "") {
+        alert("Pilih metode pembayaran terlebih dahulu!");
+        return;
+    }
+
+    if (!rekening.trim()) {
+        alert("Masukkan nomor rekening atau nomor HP pengirim terlebih dahulu!");
+        return;
+    }
+
+    if (!userAktif) {
+        alert("Sesi login habis, silakan login ulang.");
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, "deposit"), {
+            uid: userAktif.uid,
+            jumlah: Number(jumlah),
+            metode: metode,
+            rekening: rekening, // Data rekening ikut tersimpan di database
+            status: "Pending",
+            tanggal: serverTimestamp()
+        });
+
+        sessionStorage.setItem("nominalTopup", jumlah);
+        window.location.href = "qris.html";
+
+    } catch (error) {
+        console.error("Gagal memproses deposit:", error);
+        alert("Terjadi kesalahan: " + error.message);
+    }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profil Saya</title>
+
+<style>
+body{
+font-family:Arial,sans-serif;
+background:#f5f5f5;
+margin:0;
+padding:20px;
+}
+
+.box{
+max-width:500px;
+margin:auto;
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,.2);
+}
+
+h2{
+text-align:center;
+color:#00a86b;
+}
+
+.data{
+margin:12px 0;
+padding:10px;
+border-bottom:1px solid #ddd;
+}
+
+b{
+color:#00a86b;
+}
+
+button{
+width:100%;
+padding:12px;
+margin-top:15px;
+background:#00a86b;
+color:white;
+border:none;
+border-radius:8px;
+cursor:pointer;
+}
+
+button:hover{
+background:#008f5a;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>Profil Saya</h2>
+
+<div class="data"><b>Nama :</b> <span id="nama"></span></div>
+
+<div class="data"><b>Username :</b> <span id="username"></span></div>
+
+<div class="data"><b>Email :</b> <span id="email"></span></div>
+
+<div class="data"><b>Nomor HP :</b> <span id="hp"></span></div>
+
+<div class="data"><b>Metode Pembayaran :</b> <span id="metode"></span></div>
+
+<div class="data"><b>Nama Rekening :</b> <span id="namaRekening"></span></div>
+
+<div class="data"><b>Nomor Rekening :</b> <span id="nomorRekening"></span></div>
+
+<div class="data"><b>Poin :</b> <span id="poin"></span></div>
+
+<button onclick="location.href='dashboard.html'">
+Kembali ke Dashboard
+</button>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey:"AIzaSyCqE8yJBHcCiWbgOo53RR-TlZW-Ia8XTvc",
+authDomain:"tebak-tebak-cuan-ef0d7.firebaseapp.com",
+projectId:"tebak-tebak-cuan-ef0d7",
+storageBucket:"tebak-tebak-cuan-ef0d7.firebasestorage.app",
+messagingSenderId:"399613865817",
+appId:"1:399613865817:web:0eae23e826d8544741e648"
+};
+
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+
+onAuthStateChanged(auth, async(user)=>{
+
+if(!user){
+location.href="login.html";
+return;
+}
+
+const ref=doc(db,"member",user.uid);
+const snap=await getDoc(ref);
+
+if(snap.exists()){
+
+const data=snap.data();
+
+document.getElementById("nama").textContent=data.nama || "-";
+document.getElementById("username").textContent=data.username || "-";
+document.getElementById("email").textContent=data.email || "-";
+document.getElementById("hp").textContent=data.hp || "-";
+document.getElementById("metode").textContent=data.metode || "-";
+document.getElementById("namaRekening").textContent=data.namaRekening || "-";
+document.getElementById("nomorRekening").textContent=data.nomorRekening || "-";
+document.getElementById("poin").textContent=data.poin || 0;
+
+}
+
+});
+
+</script>
+
+</body>
+</html>

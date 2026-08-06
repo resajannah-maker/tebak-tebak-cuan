@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kelola Saldo - Admin Tebak-Tebak Cuan</title>
+
+<style>
+body{
+font-family:Arial;
+background:#f5f5f5;
+margin:0;
+}
+
+header{
+background:#2563eb;
+color:white;
+padding:20px;
+text-align:center;
+font-size:24px;
+}
+
+.container{
+padding:20px;
+max-width: 800px;
+margin: auto;
+}
+
+.card {
+background: white;
+padding: 25px;
+border-radius: 10px;
+box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+margin-bottom: 20px;
+}
+
+.form-group {
+margin-bottom: 15px;
+}
+
+label {
+display: block;
+margin-bottom: 5px;
+font-weight: bold;
+color: #333;
+}
+
+input, select {
+width: 100%;
+padding: 12px;
+border: 1px solid #ccc;
+border-radius: 6px;
+box-sizing: border-box;
+font-size: 14px;
+}
+
+button {
+padding: 12px 20px;
+font-size: 16px;
+border: none;
+border-radius: 6px;
+background: #2563eb;
+color: white;
+cursor: pointer;
+width: 100%;
+}
+
+button:hover {
+opacity: 0.9;
+}
+
+.btn-kembali {
+background: #6b7280;
+margin-bottom: 15px;
+width: auto;
+padding: 10px 15px;
+font-size: 14px;
+border-radius: 8px;
+}
+</style>
+
+</head>
+<body>
+
+<header>
+Kelola Saldo / Poin Member
+</header>
+
+<div class="container">
+
+<button class="btn-kembali" onclick="location.href='Admin-dashboard.html'">← Kembali ke Dashboard</button>
+
+<div class="card">
+    <h3>Form Update Saldo Manual</h3>
+    <form id="form-saldo">
+        <div class="form-group">
+            <label>Pilih / Cari ID Member (Email atau Username):</label>
+            <select id="select-member" required>
+                <option value="">-- Memuat daftar member --</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Aksi:</label>
+            <select id="jenis-aksi" required>
+                <option value="tambah">Tambah Saldo (+)</option>
+                <option value="kurang">Kurang Saldo (-)</option>
+                <option value="set">Atur Nominal Baru (Set)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Nominal (Rupiah / Poin):</label>
+            <input type="number" id="nominal" placeholder="Contoh: 50000" required>
+        </div>
+
+        <button type="submit">Proses Perubahan Saldo</button>
+    </form>
+</div>
+
+</div>
+
+<!-- Skrip Firebase & Logika Kelola Saldo -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // Konfigurasi Firebase Asli Kamu
+    const firebaseConfig = {
+      apiKey: "AIzaSyCqE8yJBHcCiWbgOo53RR-TlZW-Ia8XTvc",
+      authDomain: "tebak-tebak-cuan-ef0d7.firebaseapp.com",
+      projectId: "tebak-tebak-cuan-ef0d7",
+      storageBucket: "tebak-tebak-cuan-ef0d7.firebasestorage.app",
+      messagingSenderId: "399613865817",
+      appId: "1:399613865817:web:0eae23e826d8544741e648",
+      measurementId: "G-E9227HR8G8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const selectMember = document.getElementById('select-member');
+    const formSaldo = document.getElementById('form-saldo');
+
+    // 1. Ambil daftar member untuk dimasukkan ke pilihan (Dropdown)
+    async function muatDaftarMember() {
+        try {
+            const querySnapshot = await getDocs(collection(db, "member"));
+            selectMember.innerHTML = '<option value="">-- Pilih Member --</option>';
+            
+            if (querySnapshot.empty) {
+                selectMember.innerHTML = '<option value="">Belum ada data member</option>';
+                return;
+            }
+
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const id = docSnap.id;
+                const namaTampil = data.username || data.email || data.nama || id;
+                const saldoSaatIni = data.poin ?? data.saldo ?? 0;
+
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = `${namaTampil} (Poin: ${Number(saldoSaatIni).toLocaleString()})`;
+                selectMember.appendChild(option);
+            });
+        } catch (error) {
+            console.error("Gagal memuat member:", error);
+            selectMember.innerHTML = '<option value="">Gagal memuat data member</option>';
+        }
+    }
+
+    // 2. Eksekusi perubahan saldo saat form disubmit
+    formSaldo.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const memberId = selectMember.value;
+        const aksi = document.getElementById('jenis-aksi').value;
+        const nominalInput = Number(document.getElementById('nominal').value);
+
+        if (!memberId) {
+            alert("Silakan pilih member terlebih dahulu!");
+            return;
+        }
+
+        try {
+            const memberRef = doc(db, "member", memberId);
+            const memberSnap = await getDoc(memberRef);
+
+            if (!memberSnap.exists()) {
+                alert("Data member tidak ditemukan di database!");
+                return;
+            }
+
+            const dataMember = memberSnap.data();
+            const saldoLama = Number(dataMember.poin ?? dataMember.saldo ?? 0);
+            let saldoBaru = saldoLama;
+
+            if (aksi === 'tambah') {
+                saldoBaru = saldoLama + nominalInput;
+            } else if (aksi === 'kurang') {
+                saldoBaru = saldoLama - nominalInput;
+                if (saldoBaru < 0) saldoBaru = 0; // Mencegah saldo minus
+            } else if (aksi === 'set') {
+                saldoBaru = nominalInput;
+            }
+
+            // Update ke Firestore menggunakan field 'poin'
+            await updateDoc(memberRef, {
+                poin: saldoBaru
+            });
+
+            alert(`Berhasil! Poin member telah diperbarui menjadi: ${saldoBaru.toLocaleString()}`);
+            formSaldo.reset();
+            muatDaftarMember(); // Refresh dropdown
+
+        } catch (error) {
+            alert("Terjadi kesalahan: " + error.message);
+        }
+    });
+
+    window.onload = muatDaftarMember;
+</script>
+
+</body>
+</html>

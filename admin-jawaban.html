@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kelola Jawaban Member - Admin Tebak-Tebak Cuan</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#f5f5f5;
+}
+
+header{
+    background:#2563eb;
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+
+.container{
+    width:95%;
+    max-width:950px;
+    margin:20px auto;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
+    overflow-x: auto;
+}
+
+h2{
+    color:#2563eb;
+    font-size: 18px;
+}
+
+.btn-kembali {
+    background: #6b7280;
+    margin-bottom: 15px;
+    width: auto;
+    padding: 10px 15px;
+    font-size: 14px;
+    border-radius: 8px;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-kembali:hover {
+    background: #4b5563;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 14px;
+    min-width: 700px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background: #f8f9fa;
+}
+
+.badge-pending {
+    background: #fef08a;
+    color: #854d0e;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>📥 Daftar Jawaban Member</h1>
+</header>
+
+<div class="container">
+    <button class="btn-kembali" onclick="history.back()">← Kembali</button>
+
+    <h2>Semua Jawaban Kuis Masuk</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>UID Member</th>
+                <th>Pertanyaan Soal</th>
+                <th>Jawaban Member</th>
+                <th>Status</th>
+                <th>Waktu</th>
+            </tr>
+        </thead>
+        <tbody id="tabelJawabanMember">
+            <tr>
+                <td colspan="6" style="text-align: center; color: #666;">Memuat data jawaban...</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCqE8yJBHcCiWbgOo53RR-TlZW-Ia8XTvc",
+  authDomain: "tebak-tebak-cuan-ef0d7.firebaseapp.com",
+  projectId: "tebak-tebak-cuan-ef0d7",
+  storageBucket: "tebak-tebak-cuan-ef0d7.firebasestorage.app",
+  messagingSenderId: "399613865817",
+  appId: "1:399613865817:web:0eae23e826d8544741e648"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+async function muatJawabanMember() {
+    const tabel = document.getElementById('tabelJawabanMember');
+    try {
+        const querySnapshot = await getDocs(collection(db, "jawaban"));
+        tabel.innerHTML = "";
+
+        if (querySnapshot.empty) {
+            tabel.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #666;">Belum ada jawaban dari member.</td></tr>`;
+            return;
+        }
+
+        let no = 0;
+        
+        for (const docSnap of querySnapshot.docs) {
+            no++;
+            let data = docSnap.data();
+            let waktu = data.tanggal ? new Date(data.tanggal.seconds * 1000).toLocaleString('id-ID') : '-';
+            
+            // Cek berbagai kemungkinan nama field referensi soal di dokumen jawaban
+            let idSoalTarget = data.idSoal || data.soalId || data.id_soal || data.nomorSoal;
+            let teksSoal = data.pertanyaan || data.teksSoal || data.soal || null;
+
+            // Jika teks soal belum ada di dokumen jawaban, ambil langsung dari koleksi "soal"
+            if (!teksSoal && idSoalTarget) {
+                try {
+                    const soalDocRef = doc(db, "soal", String(idSoalTarget));
+                    const soalSnap = await getDoc(soalDocRef);
+                    if (soalSnap.exists()) {
+                        let soalData = soalSnap.data();
+                        teksSoal = soalData.pertanyaan || soalData.soal || soalData.teks;
+                    }
+                } catch (err) {
+                    console.error("Gagal ambil detail soal:", err);
+                }
+            }
+
+            let tampilanSoal = teksSoal || `(ID Soal: ${idSoalTarget || 'Tidak Diketahui'})`;
+
+            let row = `
+                <tr>
+                    <td>${no}</td>
+                    <td><small style="color:#555;">${data.uid || '-'}</small></td>
+                    <td><b>${tampilanSoal}</b></td>
+                    <td><span style="color: #059669; font-weight: bold;">${data.jawaban || '-'}</span></td>
+                    <td><span class="badge-pending">${data.status || 'Pending'}</span></td>
+                    <td><small>${waktu}</small></td>
+                </tr>
+            `;
+            tabel.innerHTML += row;
+        }
+
+    } catch (e) {
+        console.error("Gagal memuat jawaban:", e);
+        tabel.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Gagal memuat data jawaban dari database.</td></tr>`;
+    }
+}
+
+window.onload = muatJawabanMember;
+</script>
+
+</body>
+</html>

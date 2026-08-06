@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - Tebak-Tebak Cuan</title>
+
+<style>
+body{
+    margin:0;
+    background:#f2f2f2;
+    font-family:Arial,sans-serif;
+}
+
+.container{
+    width:350px;
+    margin:60px auto;
+    background:#fff;
+    padding:25px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,.2);
+}
+
+h2{
+    text-align:center;
+    color:#009966;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border:1px solid #ccc;
+    border-radius:5px;
+    box-sizing:border-box;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    background:#009966;
+    color:white;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+button:hover{
+    background:#007a52;
+}
+
+p{
+    text-align:center;
+}
+
+a{
+    color:#009966;
+    text-decoration:none;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h2>Login</h2>
+
+<form id="loginForm">
+
+<input type="email" id="email" placeholder="Email" required>
+
+<input type="password" id="password" placeholder="Password" required>
+
+<button type="submit">Masuk</button>
+
+</form>
+
+<p>
+Belum punya akun?<br>
+<a href="register.html">Daftar Sekarang</a>
+</p>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCqE8yJBHcCiWbgOo53RR-TlZW-Ia8XTvc",
+  authDomain: "tebak-tebak-cuan-ef0d7.firebaseapp.com",
+  projectId: "tebak-tebak-cuan-ef0d7",
+  storageBucket: "tebak-tebak-cuan-ef0d7.firebasestorage.app",
+  messagingSenderId: "399613865817",
+  appId: "1:399613865817:web:0eae23e826d8544741e648",
+  measurementId: "G-E9227HR8G8"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+document.getElementById("loginForm").addEventListener("submit", async (e)=>{
+
+e.preventDefault();
+
+const email=document.getElementById("email").value;
+const password=document.getElementById("password").value;
+
+try{
+
+await signInWithEmailAndPassword(auth,email,password);
+
+alert("Login berhasil!");
+
+window.location.href="dashboard.html";
+
+}catch(error){
+
+alert("Email atau password salah!");
+
+}
+
+});
+
+</script>
+
+</body>
+</html>
