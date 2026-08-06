@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kirim Notifikasi ke Member - Admin</title>
+<style>
+body{ font-family:Arial, sans-serif; background:#f5f5f5; margin:0; padding:20px; }
+.container{ max-width:600px; margin:auto; background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+h2{ text-align:center; color:#2563eb; }
+.form-group{ margin-bottom:15px; }
+label{ display:block; margin-bottom:5px; font-weight:bold; color:#333; }
+select, textarea{ width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; box-sizing:border-box; font-size:14px; }
+textarea{ height:120px; resize:vertical; }
+button{ width:100%; padding:12px; background:#2563eb; color:white; border:none; border-radius:6px; font-size:16px; cursor:pointer; }
+button:hover{ background:#1d4ed8; }
+.btn-kembali{ background:#6b7280; margin-bottom:15px; width:auto; padding:8px 15px; }
+.btn-kembali:hover{ background:#4b5563; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <button class="btn-kembali" onclick="location.href='admin-dashboar.html'">← Kembali</button>
+    <h2>📢 Kirim Pesan / Notifikasi ke Member</h2>
+
+    <form id="formKirimNotif">
+        <div class="form-group">
+            <label>Pilih Tujuan Member:</label>
+            <select id="pilihMember" required>
+                <option value="">Memuat daftar member...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Isi Pesan / Pemberitahuan:</label>
+            <textarea id="isiPesan" placeholder="Tulis pengumuman atau pesan penting untuk member..." required></textarea>
+        </div>
+
+        <button type="submit" id="btnKirim">Kirim Pesan</button>
+    </form>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCqE8yJBHcCiWbgOo53RR-TlZW-Ia8XTvc",
+  authDomain: "tebak-tebak-cuan-ef0d7.firebaseapp.com",
+  projectId: "tebak-tebak-cuan-ef0d7",
+  storageBucket: "tebak-tebak-cuan-ef0d7.firebasestorage.app",
+  messagingSenderId: "399613865817",
+  appId: "1:399613865817:web:0eae23e826d8544741e648"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const selectMember = document.getElementById("pilihMember");
+
+// Ambil daftar semua member untuk ditampilkan di pilihan dropdown
+async function muatDaftarMember() {
+    try {
+        const querySnapshot = await getDocs(collection(db, "member"));
+        selectMember.innerHTML = `<option value="">-- Pilih Member --</option>`;
+        
+        querySnapshot.forEach((docItem) => {
+            const data = docItem.data();
+            const uid = docItem.id;
+            const nama = data.nama || "Tanpa Nama";
+            
+            const option = document.createElement("option");
+            option.value = uid;
+            option.textContent = `${nama} (ID: ${uid.substring(0,6)}...)`;
+            selectMember.appendChild(option);
+        });
+    } catch (error) {
+        console.error("Gagal memuat member:", error);
+        selectMember.innerHTML = `<option value="">Gagal memuat daftar member</option>`;
+    }
+}
+
+window.onload = muatDaftarMember;
+
+// Kirim pesan ke member yang dipilih
+document.getElementById("formKirimNotif").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const uidTujuan = selectMember.value;
+    const pesan = document.getElementById("isiPesan").value.trim();
+    
+    if (!uidTujuan || !pesan) return;
+
+    const btn = document.getElementById("btnKirim");
+    btn.disabled = true;
+    btn.textContent = "Mengirim...";
+
+    try {
+        await addDoc(collection(db, "notifikasi_member"), {
+            uid: uidTujuan,       // Menyimpan UID member spesifik yang dituju
+            pesan: pesan,
+            dibaca: false,       // Penanda apakah member sudah baca atau belum
+            tanggal: serverTimestamp()
+        });
+
+        alert("Pesan/Notifikasi berhasil dikirim ke member!");
+        document.getElementById("isiPesan").value = "";
+        selectMember.value = "";
+    } catch (error) {
+        alert("Gagal mengirim pesan: " + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Kirim Pesan";
+    }
+});
+</script>
+
+</body>
+</html>
