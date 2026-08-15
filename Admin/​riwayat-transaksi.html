@@ -110,15 +110,8 @@ Riwayat Transaksi & Aktivitas
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCqE8yJBHcCiWbgOo53RR-TlZW-Ia8XTvc",
-        authDomain: "tebak-tebak-cuan-ef0d7.firebaseapp.com",
-        projectId: "tebak-tebak-cuan-ef0d7",
-        storageBucket: "tebak-tebak-cuan-ef0d7.firebasestorage.app",
-        messagingSenderId: "399613865817",
-        appId: "1:399613865817:web:0eae23e826d8544741e648",
-        measurementId: "G-E9227HR8G8"
-    };
+    // Memanggil konfigurasi dari file luar agar aman dari deteksi GitHub
+    import { firebaseConfig } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -132,6 +125,9 @@ Riwayat Transaksi & Aktivitas
 
             const namaMemberCache = {};
 
+            /**
+             * @param {string} uid
+             */
             async function ambilNamaMember(uid) {
                 if (!uid || uid === '-') return '-';
                 if (namaMemberCache[uid]) return namaMemberCache[uid];
@@ -237,6 +233,3 @@ Riwayat Transaksi & Aktivitas
 
 </body>
 </html>
-
-
-
