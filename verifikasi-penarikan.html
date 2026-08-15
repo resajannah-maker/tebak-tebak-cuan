@@ -98,7 +98,8 @@ Verifikasi Penarikan (Withdraw) Member
 
 <div class="container">
 
-<button class="btn-kembali" onclick="location.href='Admin-dashboard.html'">← Kembali ke Dashboard</button>
+<!-- Link disesuaikan ke admin-dashboard.html (a kecil) -->
+<button class="btn-kembali" onclick="location.href='admin-dashboard.html'">← Kembali ke Dashboard</button>
 
 <div class="card">
     <h3>Daftar Permintaan Penarikan Saldo Menunggu Konfirmasi</h3>
@@ -222,7 +223,8 @@ Verifikasi Penarikan (Withdraw) Member
                 const saldoBaru = saldoLama - jumlahTarik;
 
                 await updateDoc(memberRef, {
-                    poin: saldoBaru
+                    poin: saldoBaru,
+                    saldo: saldoBaru
                 });
 
                 await updateDoc(penarikanRef, {
