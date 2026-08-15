@@ -114,14 +114,18 @@ document.getElementById("tarikForm").addEventListener("submit", async (e) => {
         const pajak = jumlahMinta * 0.10;         // Besar potongan 10%
         const jumlahBersih = jumlahMinta - pajak; // Saldo bersih setelah dipotong pajak
 
-        // Simpan data pengajuan penarikan ke koleksi "penarikan"
+        // Simpan data pengajuan penarikan ke koleksi "penarikan" (disesuaikan dengan kebutuhan Admin)
         await addDoc(collection(db, "penarikan"), {
             uid: currentUser.uid,
+            namaRekening: namaMember,
             nama: namaMember,
-            jumlahMinta: jumlahMinta, // Jumlah awal sebelum pajak
-            potonganPajak: pajak,     // Nominal pajak 10%
-            jumlah: jumlahBersih,     // Jumlah bersih yang masuk ke riwayat/diterima
+            jumlahMinta: jumlahMinta, 
+            potonganPajak: pajak,     
+            jumlah: jumlahMinta,      // Mengirim jumlahMinta agar Admin bisa memotong saldo awal dengan benar
+            jumlahBersih: jumlahBersih,
+            metode: tujuan,           // Disesuaikan agar dibaca Admin
             tujuan: tujuan,
+            nomorRekening: nomorTujuan, // Disesuaikan agar dibaca Admin
             nomorTujuan: nomorTujuan,
             status: "Pending", 
             tanggal: serverTimestamp()
