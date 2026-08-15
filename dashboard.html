@@ -112,7 +112,7 @@ button:hover{
 <div class="card">
 <h3>👤 Profil</h3>
 <p>Nama : <span id="namaUser">Memuat...</span></p>
-<p>ID : TTC000001</p>
+<p>ID : <span id="idUser">Memuat...</span></p>
 </div>
 
 <div class="card">
@@ -169,15 +169,22 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     try {
-        // 1. Ambil data profil & saldo user
+        // 1. Ambil data profil, ID, & saldo user
         const docRef = doc(db, "member", user.uid);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            document.getElementById("namaUser").textContent = data.nama || "-";
-            const poin = data.poin || data.Saldo || data.saldo || 0;
+            document.getElementById("namaUser").textContent = data.nama || data.username || "Member";
+            
+            // Ambil ID dari field database (id_member / id) atau ambil 8 karakter pertama UID jika tidak ada
+            document.getElementById("idUser").textContent = data.id_member || data.id || "TTC-" + user.uid.substring(0, 6).toUpperCase();
+            
+            const poin = data.poin ?? data.Poin ?? data.Saldo ?? data.saldo ?? 0;
             document.getElementById("saldoUser").textContent = "Rp " + Number(poin).toLocaleString("id-ID");
+        } else {
+            document.getElementById("namaUser").textContent = "Member Baru";
+            document.getElementById("idUser").textContent = "TTC-" + user.uid.substring(0, 6).toUpperCase();
         }
 
         // 2. Pantau koleksi "notifikasi_member" secara Real-Time untuk hitung pesan yang belum dibaca
