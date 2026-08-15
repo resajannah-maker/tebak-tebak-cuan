@@ -63,24 +63,16 @@ p{
 <form id="registerForm">
 
 <input type="text" id="nama" placeholder="Nama Lengkap" required>
-
 <input type="text" id="username" placeholder="Username" required>
-
 <input type="email" id="email" placeholder="Email" required>
-
 <input type="tel" id="hp" placeholder="Nomor HP" required>
-
 <input type="text" id="metode" placeholder="Metode Pembayaran (DANA, BCA, OVO, dll)" required>
-
 <input type="text" id="namaRekening" placeholder="Nama Pemilik Rekening" required>
-
 <input type="text" id="nomorRekening" placeholder="Nomor Rekening / Nomor E-Wallet" required>
-
 <input type="password" id="password" placeholder="Password" required>
-
 <input type="password" id="konfirmasi" placeholder="Konfirmasi Password" required>
 
-<button type="submit">Daftar</button>
+<button type="submit" id="btnDaftar">Daftar</button>
 
 </form>
 
@@ -88,6 +80,7 @@ p{
 <a href="login.html">Login di sini</a></p>
 
 </div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
@@ -110,45 +103,59 @@ const db = getFirestore(app);
 document.getElementById("registerForm").addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    const btn = document.getElementById("btnDaftar");
+    btn.disabled = true;
+    btn.innerText = "Memproses...";
+
     const nama = document.getElementById("nama").value;
     const username = document.getElementById("username").value;
     const email = document.getElementById("email").value;
     const hp = document.getElementById("hp").value;
     const metode = document.getElementById("metode").value;
-const namaRekening = document.getElementById("namaRekening").value;
-const nomorRekening = document.getElementById("nomorRekening").value;
+    const namaRekening = document.getElementById("namaRekening").value;
+    const nomorRekening = document.getElementById("nomorRekening").value;
     const password = document.getElementById("password").value;
     const konfirmasi = document.getElementById("konfirmasi").value;
 
     if (password !== konfirmasi) {
         alert("Password tidak sama!");
+        btn.disabled = false;
+        btn.innerText = "Daftar";
         return;
     }
 
     try {
-        const userCredential = await createUserWithEmailAndPassword(
-            auth,
-            email,
-            password
-        );
+        // 1. Buat User di Auth
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-        await setDoc(doc(db, "member", userCredential.user.uid), {
-    nama: nama,
-    username: username,
-    email: email,
-    hp: hp,
-    metode: metode,
-    namaRekening: namaRekening,
-    nomorRekening: nomorRekening,
-    poin: 0,
-    dibuat: new Date()
-});
+        // 2. Format ID Member Unik (Contoh: TTC-829A1F)
+        const customIdMember = "TTC-" + user.uid.substring(0, 6).toUpperCase();
+
+        // 3. Simpan ke Firestore
+        await setDoc(doc(db, "member", user.uid), {
+            uid: user.uid,
+            id_member: customIdMember,
+            nama: nama,
+            username: username,
+            email: email,
+            hp: hp,
+            metode: metode,
+            namaRekening: namaRekening,
+            nomorRekening: nomorRekening,
+            poin: 0,
+            saldo: 0,
+            role: "member",
+            dibuat: new Date()
+        });
 
         alert("Pendaftaran berhasil!");
-        window.location.href = "index.html";
+        window.location.href = "dashboard.html";
 
     } catch (error) {
         alert("Gagal daftar: " + error.message);
+        btn.disabled = false;
+        btn.innerText = "Daftar";
     }
 });
 </script>
