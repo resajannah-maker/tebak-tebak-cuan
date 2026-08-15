@@ -98,7 +98,6 @@ Verifikasi Penarikan (Withdraw) Member
 
 <div class="container">
 
-<!-- Link disesuaikan ke admin-dashboard.html (a kecil) -->
 <button class="btn-kembali" onclick="location.href='admin-dashboard.html'">← Kembali ke Dashboard</button>
 
 <div class="card">
@@ -165,20 +164,23 @@ Verifikasi Penarikan (Withdraw) Member
                 let tombolAksi = `-`;
                 if (status === 'Pending' || status === 'menunggu') {
                     tombolAksi = `
-                        <button class="btn-terima" onclick="prosesPenarikan('${penarikanId}', '${idTargetMember}', ${data.jumlah || data.nominal || 0}, 'terima')">Setujui</button>
+                        <button class="btn-terima" onclick="prosesPenarikan('${penarikanId}', '${idTargetMember}', ${data.jumlahMinta || data.jumlah || 0}, 'terima')">Setujui</button>
                         <button class="btn-tolak" onclick="prosesPenarikan('${penarikanId}', '${idTargetMember}', 0, 'tolak')">Tolak</button>
                     `;
                 } else {
                     tombolAksi = `<span style="color: gray; font-style: italic;">Sudah diproses</span>`;
                 }
 
-                const infoRekening = `${data.metode || 'Bank'} - ${data.nomorRekening || data.rekening || '-'} (${data.namaRekening || data.nama || '-'})`;
+                const metodeBank = data.metode || data.tujuan || 'Bank';
+                const noRek = data.nomorRekening || data.nomorTujuan || data.rekening || '-';
+                const namaRek = data.namaRekening || data.nama || '-';
+                const infoRekening = `${metodeBank} - ${noRek} (${namaRek})`;
 
                 const row = `
                     <tr>
                         <td>${no}</td>
                         <td>${idTargetMember || 'Tidak diketahui'}</td>
-                        <td><strong>Rp ${Number(data.jumlah || data.nominal || 0).toLocaleString()}</strong></td>
+                        <td><strong>Rp ${Number(data.jumlahMinta || data.jumlah || 0).toLocaleString()}</strong></td>
                         <td>${infoRekening}</td>
                         <td><span style="color: ${status === 'Pending' ? 'orange' : (status === 'Berhasil' ? 'green' : 'red')}; font-weight: bold;">${status}</span></td>
                         <td>${tombolAksi}</td>
@@ -212,7 +214,7 @@ Verifikasi Penarikan (Withdraw) Member
                 }
 
                 const dataMember = memberSnap.data();
-                const saldoLama = Number(dataMember.poin ?? dataMember.saldo ?? 0);
+                const saldoLama = Number(dataMember.poin ?? dataMember.Poin ?? dataMember.saldo ?? 0);
                 const jumlahTarik = Number(jumlah);
 
                 if (saldoLama < jumlahTarik) {
