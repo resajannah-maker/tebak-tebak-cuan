@@ -122,6 +122,7 @@ th{
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -135,29 +136,37 @@ th{
     };
 
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const currentMemberId = "Fxe38fcXx8XGOxYCVxLjhqnf6dB3";
+    // Memastikan user sudah login terlebih dahulu
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // Mengambil UID user yang sedang aktif/login saat ini
+            muatWallet(user.uid);
+        } else {
+            // Jika belum login, alihkan ke halaman login
+            window.location.href = 'login.html';
+        }
+    });
 
-    async function muatWallet() {
+    async function muatWallet(currentMemberId) {
         const tabelRiwayat = document.getElementById('tabel-riwayat');
 
         try {
+            // Ambil data saldo milik user yang sedang login
             const memberRef = doc(db, "member", currentMemberId);
             const memberSnap = await getDoc(memberRef);
 
             if (memberSnap.exists()) {
                 const d = memberSnap.data();
-                console.log("Data member dari Firebase:", d); // Untuk dicek di konsol
-
-                // Mencakup berbagai kemungkinan nama field di database (poin, Poin, saldo, Saldo, dll)
                 const totalSaldo = Number(d.poin ?? d.Poin ?? d.saldo ?? d.Saldo ?? d.POINT ?? d.SALDO ?? 0);
                 document.getElementById('text-saldo').innerText = `Rp ${totalSaldo.toLocaleString()}`;
             } else {
                 document.getElementById('text-saldo').innerText = "Rp 0";
             }
 
-            // Ambil Riwayat Transaksi
+            // Ambil Riwayat Deposit milik user yang sedang login
             tabelRiwayat.innerHTML = "";
             let semuaTransaksi = [];
 
@@ -176,6 +185,7 @@ th{
                 console.log("Error deposit:", e);
             }
 
+            // Ambil Riwayat Penarikan milik user yang sedang login
             try {
                 const qPenarikan = query(collection(db, "penarikan"), where("uid", "==", currentMemberId));
                 const snapshotPenarikan = await getDocs(qPenarikan);
@@ -217,8 +227,6 @@ th{
             tabelRiwayat.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red;">Gagal memuat data transaksi.</td></tr>`;
         }
     }
-
-    window.onload = muatWallet;
 </script>
 
 </body>
