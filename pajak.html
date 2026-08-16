@@ -161,7 +161,7 @@ Pengaturan Pajak & Pendapatan
     const totalPajakText = document.getElementById('totalPajakTerKumpul');
 
     
-      async function muatDataDanHitungPajak() {
+          async function muatDataDanHitungPajak() {
         try {
             const docRef = doc(db, "pengaturan", "pajak_transaksi");
             const docSnap = await getDoc(docRef);
@@ -172,24 +172,22 @@ Pengaturan Pajak & Pendapatan
                 biayaAdminInput.value = data.biayaTetap || 0;
             }
 
+            // Ambil semua data dari koleksi 'penarikan'
             const querySnapshot = await getDocs(collection(db, "penarikan"));
             let totalPajak = 0;
 
             querySnapshot.forEach((docItem) => {
                 const item = docItem.data();
                 
-                // Cek semua kemungkinan field pajak atau hitung 10% langsung dari nominal penarikan
-                let pajakItem = Number(item.potonganPajak || item.PotonganPajak || 0);
+                // Cari nominal penarikan dari berbagai kemungkinan nama field
+                const nominalTrx = Number(item.jumlahMinta || item.JumlahMinta || item.jumlah || item.Jumlah || 0);
                 
-                if (pajakItem === 0) {
-                    // Jika field potonganPajak kosong, hitung otomatis 10% dari nilai jumlah atau jumlahMinta
-                    const nominalTrx = Number(item.jumlah || item.Jumlah || item.jumlahMinta || item.JumlahMinta || 0);
-                    pajakItem = nominalTrx * 0.10;
-                }
-                
+                // Akumulasikan 10% dari setiap nominal penarikan sebagai pendapatan pajak admin
+                const pajakItem = nominalTrx * 0.10;
                 totalPajak += pajakItem;
             });
 
+            // Tampilkan total akumulasi pajak ke layar admin
             totalPajakText.innerText = "Rp " + totalPajak.toLocaleString('id-ID');
 
         } catch (error) {
