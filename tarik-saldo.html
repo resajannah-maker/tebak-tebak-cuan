@@ -45,9 +45,10 @@ button:hover{ background:#008f5a; }
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+// Diselaraskan menggunakan Firebase v10.7.1 agar seragam dengan file lain
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCqE8yJBHcCiWbgOo53RR-TlZW-Ia8XTvc",
@@ -97,35 +98,53 @@ document.getElementById("tarikForm").addEventListener("submit", async (e) => {
         const userDocRef = doc(db, "member", currentUser.uid);
         const userSnap = await getDoc(userDocRef);
         
-        let namaMember = "User";
-        if(userSnap.exists()){
-            namaMember = userSnap.data().nama || "User";
-            let poinUser = Number(userSnap.data().poin || userSnap.data().Poin || userSnap.data().saldo || userSnap.data().Saldo || 0);
-            
-            if(poinUser < jumlahMinta) {
-                alert("Saldo/Poin Anda tidak mencukupi untuk penarikan ini!");
-                btn.disabled = false;
-                btn.textContent = "Ajukan Penarikan";
-                return;
-            }
+        if(!userSnap.exists()){
+            alert("Data member tidak ditemukan!");
+            btn.disabled = false;
+            btn.textContent = "Ajukan Penarikan";
+            return;
+        }
+
+        const dataUser = userSnap.data();
+        // Cek berbagai kemungkinan nama field saldo/poin
+        let poinKey = 'poin';
+        if (dataUser.Poin !== undefined) poinKey = 'Poin';
+        else if (dataUser.saldo !== undefined) poinKey = 'saldo';
+        else if (dataUser.Saldo !== undefined) poinKey = 'Saldo';
+        else if (dataUser.POINT !== undefined) poinKey = 'POINT';
+        else if (dataUser.SALDO !== undefined) poinKey = 'SALDO';
+
+        let poinUser = Number(dataUser[poinKey] || 0);
+        
+        if(poinUser < jumlahMinta) {
+            alert("Saldo/Poin Anda tidak mencukupi untuk penarikan ini!");
+            btn.disabled = false;
+            btn.textContent = "Ajukan Penarikan";
+            return;
         }
 
         // PERHITUNGAN PAJAK 10%
-        const pajak = jumlahMinta * 0.10;         // Besar potongan 10%
-        const jumlahBersih = jumlahMinta - pajak; // Saldo bersih setelah dipotong pajak
+        const pajak = jumlahMinta * 0.10;         
+        const jumlahBersih = jumlahMinta - pajak; // Nominal yang diterima setelah dipotong pajak 10%
 
-        // Simpan data pengajuan penarikan ke koleksi "penarikan" (disesuaikan dengan kebutuhan Admin)
+        // 1. Kurangi saldo pengguna secara otomatis langsung saat mengajukan
+        const saldoBaru = poinUser - jumlahMinta;
+        await updateDoc(userDocRef, {
+            [poinKey]: saldoBaru
+        });
+
+        // 2. Simpan data pengajuan penarikan ke koleksi "penarikan"
         await addDoc(collection(db, "penarikan"), {
             uid: currentUser.uid,
-            namaRekening: namaMember,
-            nama: namaMember,
+            namaRekening: dataUser.nama || dataUser.Nama || dataUser.username || "User",
+            nama: dataUser.nama || dataUser.Nama || dataUser.username || "User",
             jumlahMinta: jumlahMinta, 
             potonganPajak: pajak,     
-            jumlah: jumlahMinta,      // Mengirim jumlahMinta agar Admin bisa memotong saldo awal dengan benar
+            jumlah: jumlahBersih,     // Nominal yang dicatat di riwayat/admin adalah jumlah bersih setelah pajak
             jumlahBersih: jumlahBersih,
-            metode: tujuan,           // Disesuaikan agar dibaca Admin
+            metode: tujuan,           
             tujuan: tujuan,
-            nomorRekening: nomorTujuan, // Disesuaikan agar dibaca Admin
+            nomorRekening: nomorTujuan, 
             nomorTujuan: nomorTujuan,
             status: "Pending", 
             tanggal: serverTimestamp()
