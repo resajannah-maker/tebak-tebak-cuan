@@ -69,7 +69,6 @@ button:hover {
 opacity: 0.9;
 }
 
-/* Styling untuk tombol kembali agar selaras */
 .btn-kembali {
 background: #6b7280;
 margin-bottom: 20px;
@@ -111,10 +110,8 @@ Pengaturan Pajak & Pendapatan
 
 <div class="container">
 
-<!-- Tombol Kembali ke Dashboard berbentuk button penuh -->
 <button class="btn-kembali" onclick="location.href='admin-dashboard.html'">← Kembali ke Dashboard</button>
 
-<!-- Card Pengaturan -->
 <div class="card">
     <h3>Konfigurasi Potongan Pajak Sistem</h3>
     <form id="form-pajak">
@@ -137,7 +134,6 @@ Pengaturan Pajak & Pendapatan
     </form>
 </div>
 
-<!-- Card Penghasilan Pajak -->
 <div class="card">
     <h3>Laporan Penghasilan Pajak</h3>
     <p style="color: #666; font-size: 13px;">Total akumulasi pendapatan dari potongan pajak 10% penarikan member:</p>
@@ -150,19 +146,11 @@ Pengaturan Pajak & Pendapatan
 
 </div>
 
-<!-- Skrip Firebase & Logika Perhitungan Pajak -->
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCqE8yJBHcCiWbgOo53RR-TlZW-Ia8XTvc",
-      authDomain: "tebak-tebak-cuan-ef0d7.firebaseapp.com",
-      projectId: "tebak-tebak-cuan-ef0d7",
-      storageBucket: "tebak-tebak-cuan-ef0d7.firebasestorage.app",
-      messagingSenderId: "399613865817",
-      appId: "1:399613865817:web:0eae23e826d8544741e648"
-    };
+    // Diselaraskan menggunakan Firebase v10.7.1
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { firebaseConfig } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -172,10 +160,8 @@ Pengaturan Pajak & Pendapatan
     const biayaAdminInput = document.getElementById('biayaAdmin');
     const totalPajakText = document.getElementById('totalPajakTerKumpul');
 
-    // 1. Muat pengaturan pajak & hitung total penghasilan pajak dari koleksi penarikan
     async function muatDataDanHitungPajak() {
         try {
-            // Ambil pengaturan dari Firestore
             const docRef = doc(db, "pengaturan", "pajak_transaksi");
             const docSnap = await getDoc(docRef);
 
@@ -185,26 +171,27 @@ Pengaturan Pajak & Pendapatan
                 biayaAdminInput.value = data.biayaTetap || 0;
             }
 
-            // Ambil data dari koleksi 'penarikan' untuk kalkulasi total pajak terkumpul
             const querySnapshot = await getDocs(collection(db, "penarikan"));
             let totalPajak = 0;
 
             querySnapshot.forEach((docItem) => {
                 const item = docItem.data();
-                if (item.potonganPajak) {
-                    totalPajak += Number(item.potonganPajak);
+                // Mengambil dari potonganPajak atau menghitung otomatis dari jumlahMinta jika potonganPajak belum ada
+                let pajakItem = Number(item.potonganPajak || 0);
+                if (pajakItem === 0 && item.jumlahMinta) {
+                    pajakItem = Number(item.jumlahMinta) * 0.10;
                 }
+                totalPajak += pajakItem;
             });
 
-            // Format ke Rupiah
             totalPajakText.innerText = "Rp " + totalPajak.toLocaleString('id-ID');
 
         } catch (error) {
             console.error("Gagal memuat data penghasilan pajak:", error);
+            totalPajakText.innerText = "Gagal memuat";
         }
     }
 
-    // 2. Simpan Pengaturan Pajak ke Firestore
     formPajak.addEventListener('submit', async (e) => {
         e.preventDefault();
 
