@@ -105,17 +105,37 @@ document.getElementById("tarikForm").addEventListener("submit", async (e) => {
         }
 
         const dataUser = userSnap.data();
-        let poinKey = 'poin';
-        if (dataUser.Poin !== undefined) poinKey = 'Poin';
-        else if (dataUser.saldo !== undefined) poinKey = 'saldo';
-        else if (dataUser.Saldo !== undefined) poinKey = 'Saldo';
-        else if (dataUser.POINT !== undefined) poinKey = 'POINT';
-        else if (dataUser.SALDO !== undefined) poinKey = 'SALDO';
 
-        let poinUser = Number(dataUser[poinKey] || 0);
+        // PENCETAKAN OTOMATIS: Cari key apa pun yang mengandung kata 'poin' atau 'saldo'
+        let poinKey = null;
+        let poinUser = 0;
+
+        for (let key in dataUser) {
+            let lowerKey = key.toLowerCase();
+            if (lowerKey.includes('poin') || lowerKey.includes('saldo')) {
+                let val = Number(dataUser[key]);
+                if (!isNaN(val)) {
+                    poinKey = key;
+                    poinUser = val;
+                    break;
+                }
+            }
+        }
+
+        // Jika tetap tidak ketemu, ambil angka numerik pertama yang valid di data user
+        if (!poinKey) {
+            for (let key in dataUser) {
+                let val = Number(dataUser[key]);
+                if (!isNaN(val) && val >= 0 && key !== 'phone' && key !== 'whatsapp') {
+                    poinKey = key;
+                    poinUser = val;
+                    break;
+                }
+            }
+        }
         
         if(poinUser < jumlahMinta) {
-            alert("Saldo/Poin Anda tidak mencukupi untuk penarikan ini!");
+            alert(`Saldo/Poin Anda tidak mencukupi!\nSaldo terbaca: Rp ${poinUser.toLocaleString()}\nJumlah diminta: Rp ${jumlahMinta.toLocaleString()}`);
             btn.disabled = false;
             btn.textContent = "Ajukan Penarikan";
             return;
@@ -123,22 +143,22 @@ document.getElementById("tarikForm").addEventListener("submit", async (e) => {
 
         // PERHITUNGAN PAJAK 10%
         const pajak = jumlahMinta * 0.10;         
-        const jumlahBersih = jumlahMinta - pajak; // Nominal setelah dipotong pajak 10%
+        const jumlahBersih = jumlahMinta - pajak; 
 
-        // 1. Kurangi saldo pengguna secara otomatis langsung saat mengajukan
+        // 1. Kurangi saldo pengguna secara otomatis langsung saat mengajukan berdasarkan field yang ditemukan
         const saldoBaru = poinUser - jumlahMinta;
         await updateDoc(userDocRef, {
             [poinKey]: saldoBaru
         });
 
-        // 2. Simpan data pengajuan penarikan ke koleksi "penarikan" (Jumlah menggunakan jumlahBersih)
+        // 2. Simpan data pengajuan penarikan ke koleksi "penarikan"
         await addDoc(collection(db, "penarikan"), {
             uid: currentUser.uid,
             namaRekening: dataUser.nama || dataUser.Nama || dataUser.username || "User",
             nama: dataUser.nama || dataUser.Nama || dataUser.username || "User",
             jumlahMinta: jumlahMinta, 
             potonganPajak: pajak,     
-            jumlah: jumlahBersih,     // Diubah menjadi jumlahBersih agar riwayat menampilkan nominal setelah dipotong pajak
+            jumlah: jumlahBersih,     
             jumlahBersih: jumlahBersih,
             metode: tujuan,           
             tujuan: tujuan,
