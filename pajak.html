@@ -160,7 +160,8 @@ Pengaturan Pajak & Pendapatan
     const biayaAdminInput = document.getElementById('biayaAdmin');
     const totalPajakText = document.getElementById('totalPajakTerKumpul');
 
-    async function muatDataDanHitungPajak() {
+    
+      async function muatDataDanHitungPajak() {
         try {
             const docRef = doc(db, "pengaturan", "pajak_transaksi");
             const docSnap = await getDoc(docRef);
@@ -176,11 +177,16 @@ Pengaturan Pajak & Pendapatan
 
             querySnapshot.forEach((docItem) => {
                 const item = docItem.data();
-                // Mengambil dari potonganPajak atau menghitung otomatis dari jumlahMinta jika potonganPajak belum ada
-                let pajakItem = Number(item.potonganPajak || 0);
-                if (pajakItem === 0 && item.jumlahMinta) {
-                    pajakItem = Number(item.jumlahMinta) * 0.10;
+                
+                // Cek semua kemungkinan field pajak atau hitung 10% langsung dari nominal penarikan
+                let pajakItem = Number(item.potonganPajak || item.PotonganPajak || 0);
+                
+                if (pajakItem === 0) {
+                    // Jika field potonganPajak kosong, hitung otomatis 10% dari nilai jumlah atau jumlahMinta
+                    const nominalTrx = Number(item.jumlah || item.Jumlah || item.jumlahMinta || item.JumlahMinta || 0);
+                    pajakItem = nominalTrx * 0.10;
                 }
+                
                 totalPajak += pajakItem;
             });
 
@@ -191,29 +197,3 @@ Pengaturan Pajak & Pendapatan
             totalPajakText.innerText = "Gagal memuat";
         }
     }
-
-    formPajak.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const status = statusPajakSelect.value;
-        const biayaTetap = Number(biayaAdminInput.value);
-
-        try {
-            await setDoc(doc(db, "pengaturan", "pajak_transaksi"), {
-                status: status,
-                persen: 10,
-                biayaTetap: biayaTetap,
-                updatedAt: new Date()
-            });
-
-            alert("Pengaturan pajak berhasil disimpan!");
-        } catch (error) {
-            alert("Gagal menyimpan pengaturan: " + error.message);
-        }
-    });
-
-    window.onload = muatDataDanHitungPajak;
-</script>
-
-</body>
-</html>
